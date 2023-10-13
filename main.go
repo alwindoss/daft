@@ -2,16 +2,22 @@ package main
 
 import (
 	"embed"
+	"io/fs"
+	"log"
 	"net/http"
 )
 
-//go:embed ui
+//go:embed all:ui
 var uiFS embed.FS
 
 func main() {
-	a := http.FileServer(http.FS(uiFS))
-	http.Handle("/", a)
-	http.Handle("/ui", http.StripPrefix("/ui", http.FileServer(http.FS(uiFS))))
+	staticFS := fs.FS(uiFS)
+	htmlContent, err := fs.Sub(staticFS, "ui")
+	if err != nil {
+		log.Fatal(err)
+	}
+	renderFS := http.FileServer(http.FS(htmlContent))
+	http.Handle("/", renderFS)
 
 	http.ListenAndServe(":8080", nil)
 }
